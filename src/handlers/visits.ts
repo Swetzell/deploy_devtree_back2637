@@ -2,19 +2,19 @@ import { Request, Response } from "express";
 import ProfileVisit from "../models/ProfileVisit";
 import User from "../models/User";
 
-// Registrar una nueva visita al perfil
+// Registramos una nueva visita a un perfil
 export const recordVisit = async (req: Request, res: Response) => {
   try {
     const { profileHandle } = req.params;
     const { referrer } = req.body;
 
-    // Buscar el perfil por handle
+    // aqui buscamos el perfil por handle
     const profile = await User.findOne({ handle: profileHandle });
     if (!profile) {
       return res.status(404).json({ error: "Perfil no encontrado" });
     }
 
-    // Crear registro de visita
+    // permite crear un registro de visita
     const visit = new ProfileVisit({
       profileId: profile._id,
       visitorId: req.user?.id || null, // Si hay usuario autenticado
@@ -30,24 +30,24 @@ export const recordVisit = async (req: Request, res: Response) => {
   }
 };
 
-// Obtener estadísticas de visitas de un perfil
+// obtenemos las estadísticas de visitas a un perfil
 export const getVisitStats = async (req: Request, res: Response) => {
   try {
     const { profileHandle } = req.params;
-    const { period = "week" } = req.query; // 'day', 'week', 'month', 'all'
+    const { period = "week" } = req.query; // dia, semana, mes, todo
 
-    // Verificar si el usuario tiene permisos para ver estas estadísticas
+    // verificamos si el usuario tiene permisos para ver estas estadísticas
     const profile = await User.findOne({ handle: profileHandle });
     if (!profile) {
       return res.status(404).json({ error: "Perfil no encontrado" });
     }
 
-    // Si no es el dueño del perfil, rechazar (no tenemos roles por ahora)
+    // Si no es el dueño del perfil, se rechaza
     if (profile._id.toString() !== req.user?.id) {
       return res.status(403).json({ error: "No tienes permisos para ver estas estadísticas" });
     }
 
-    // Calcular fecha de inicio según el periodo
+    // Calcula la fecha de inicio según el periodo
     const startDate = new Date();
     switch (period) {
       case 'day':
@@ -72,7 +72,7 @@ export const getVisitStats = async (req: Request, res: Response) => {
       query.date = { $gte: startDate };
     }
 
-    // Estadísticas generales
+    //las estadísticas generales
     const totalVisits = await ProfileVisit.countDocuments(query);
 
     // Agrupar por día para gráfico
@@ -91,7 +91,7 @@ export const getVisitStats = async (req: Request, res: Response) => {
       { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
     ]);
 
-    // Formatear para respuesta
+    // se formatean para respuesta
     const formattedStats = dailyStats.map(stat => ({
       date: new Date(stat._id.year, stat._id.month - 1, stat._id.day),
       visits: stat.count
